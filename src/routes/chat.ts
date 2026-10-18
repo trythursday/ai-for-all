@@ -7,6 +7,10 @@ import { RateLimiterFactory } from "../rate-limiter";
 import { MODELS, apiError, type ModelName } from "../utils/mod";
 import { estimateTokens, pickOpenAiFields } from "../utils/normalize";
 
+// The daily budget is shared by everyone, so one key must not be able to spend
+// it alone. At 15 an hour a key stays a fair share of a 0.25 day.
+const REQUESTS_PER_HOUR = 15;
+
 // Reasoning models spend their output budget thinking before they emit any
 // content, so a tiny max_tokens produces an empty message with
 // finish_reason: "length". Reserve room for an actual answer.
@@ -112,6 +116,6 @@ async function chatHandler(c: Context, config: Config) {
 export const ChatRoute = (config: Config) =>
   [
     "/api/v1/chat/completions",
-    RateLimiterFactory("authz", 3_600_000, 60),
+    RateLimiterFactory("authz", 3_600_000, REQUESTS_PER_HOUR),
     (c: Context) => chatHandler(c, config),
   ] as const;

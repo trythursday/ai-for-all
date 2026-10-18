@@ -27,6 +27,37 @@ describe("issue", () => {
     );
   });
 
+  it("logs the minted key prefix and ip, never the key", async () => {
+    const app = createApp(CONFIG);
+    const { challenge, token } = await challengeFor(app, "6.6.6.6");
+    const lines: string[] = [];
+    const log = console.log;
+
+    console.log = (...args: unknown[]) => lines.push(args.join(" "));
+
+    let apiKey: string;
+
+    try {
+      const res = await issue(
+        app,
+        {
+          token,
+          solutions: solve(token, challenge.c, challenge.s, challenge.d),
+        },
+        "6.6.6.6",
+      );
+
+      apiKey = res.body.payload!.apiKey;
+    } finally {
+      console.log = log;
+    }
+
+    expect(lines).toHaveLength(1);
+    expect(lines[0]).toContain(`minted ${apiKey.slice(0, 12)}`);
+    expect(lines[0]).toContain("ip=6.6.6.6");
+    expect(lines[0]).not.toContain(apiKey);
+  });
+
   it("rejects a replayed challenge", async () => {
     const app = createApp(CONFIG);
     const { challenge, token } = await challengeFor(app);

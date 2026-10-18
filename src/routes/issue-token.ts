@@ -6,6 +6,7 @@ import { RateLimiterFactory } from "../rate-limiter";
 import {
   IssueRequestSchema,
   apiError,
+  clientIp,
   type ConsumeNonce,
   type ResponseShape,
 } from "../utils/mod";
@@ -40,6 +41,11 @@ async function issueTokenHandler(
   }
 
   const { apiKey, expires } = mintKey();
+
+  // Enough of the key to correlate with chat traffic, not enough to use it.
+  console.log(
+    `minted ${apiKey.slice(0, 12)} ip=${clientIp(c)} expires=${new Date(expires).toISOString()}`,
+  );
 
   c.header("X-Key-Expires-At", new Date(expires).toISOString());
   c.header("X-Key-TTL", String(expires - Date.now()));

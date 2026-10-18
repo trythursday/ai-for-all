@@ -226,6 +226,25 @@ describe("chat", () => {
 
     expect(seen[0]?.body.provider).toBeUndefined();
   });
+
+  it("limits a key to 15 requests an hour", async () => {
+    stubUpstream();
+    const app = createApp(CONFIG);
+    const authorization = `Bearer ${mintKey().apiKey}`;
+
+    for (let i = 0; i < 15; i++) {
+      const res = await chat(app, { messages: [] }, authorization);
+
+      expect(res.status).toBe(200);
+    }
+
+    const blocked = await chat(app, { messages: [] }, authorization);
+
+    expect(blocked.status).toBe(429);
+    expect(await blocked.json()).toMatchObject({
+      error: { code: "rate_limit_exceeded" },
+    });
+  });
 });
 
 describe("models", () => {

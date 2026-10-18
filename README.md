@@ -56,7 +56,7 @@ IP. A solved challenge can only be redeemed once.
 ### `POST /chat/completions`
 
 OpenAI-compatible chat completions. Send `messages`; tools, streaming and the
-rest of the OpenAI body pass straight through. 60 requests per hour per key.
+rest of the OpenAI body pass straight through. 15 requests per hour per key.
 Limits: 16k input tokens, 16k output tokens, 32k context. `max_tokens` is
 clamped to whatever room is left.
 
@@ -83,6 +83,9 @@ Lists the model aliases and what they point at.
     <a href="https://ai-for-all.trythursday.org/#balance">Service budget</a>
   </p>
 </balance-widget>
+
+The above is the global balance for all users. When the daily budget is reached,
+the service 5xxs till midnight.
 
 If you think this is an interesting idea, you can kick a few bucks my way to
 help keep the service running. If you use AI For All and find it helpful or
