@@ -14,8 +14,9 @@ describe("home", () => {
     const home = renderHome();
 
     expect(home).toContain("<api-key-widget>");
-    expect(home).toContain("<balance-widget>");
-    expect(home).toContain("https://ai-for-all.trythursday.org");
+    expect(home).toContain('<balance-widget id="balance">');
+    expect(home).toContain("https://ai-for-all.trythursday.org/#balance");
+    expect(home).toContain("<title>Thursday | AI For All</title>");
 
     for (const name of Object.keys(WIDGETS)) {
       expect(home).toContain(`src="/${name}"`);

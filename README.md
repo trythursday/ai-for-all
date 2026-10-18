@@ -78,7 +78,10 @@ Lists the model aliases and what they point at.
 
 ## Help me
 
-<balance-widget>
+<balance-widget id="balance">
+  <p>
+    <a href="https://ai-for-all.trythursday.org/#balance">OpenRouter balance</a>
+  </p>
 </balance-widget>
 
 If you think this is an interesting idea, you can kick a few bucks my way to
