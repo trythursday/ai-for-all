@@ -80,7 +80,7 @@ Lists the model aliases and what they point at.
 
 <balance-widget id="balance">
   <p>
-    <a href="https://ai-for-all.trythursday.org/#balance">OpenRouter balance</a>
+    <a href="https://ai-for-all.trythursday.org/#balance">Service budget</a>
   </p>
 </balance-widget>
 

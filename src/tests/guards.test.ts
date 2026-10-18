@@ -10,6 +10,7 @@ import {
   budgetBreaker,
   trafficBreaker,
 } from "../guard";
+import { DEFAULT_DAILY_BUDGET_USD } from "../config";
 import { RateLimiterFactory } from "../rate-limiter";
 import { clientIp } from "../utils/mod";
 
@@ -109,39 +110,41 @@ describe("RateLimiterFactory", () => {
 });
 
 describe("budgetBreaker", () => {
+  // The spend cache is module state shared with the other suites, so each test
+  // jumps far enough ahead that the previous fetch is always stale.
   it("allows traffic when spend is under budget", async () => {
-    process.env.UPSTREAM_SK = "sk-or-test";
-    globalThis.fetch = (async () => spendResponse(0.4)) as unknown as typeof fetch;
+    setSystemTime(realNow + 20 * 86_400_000);
+    globalThis.fetch = (async () =>
+      spendResponse(DEFAULT_DAILY_BUDGET_USD / 2)) as unknown as typeof fetch;
 
     const n = next();
-    const res = await budgetBreaker(ctx(), n.fn);
+    const res = await budgetBreaker(DEFAULT_DAILY_BUDGET_USD, "sk-or-test")(ctx(), n.fn);
 
     expect(res).toBeUndefined();
     expect(n.called()).toBe(true);
   });
 
   it("keeps the last known spend when the response cannot be parsed", async () => {
-    process.env.UPSTREAM_SK = "sk-or-test";
-    setSystemTime(realNow + 61_000);
+    setSystemTime(realNow + 21 * 86_400_000);
     globalThis.fetch = (async () =>
       new Response(JSON.stringify({ nope: true }), {
         status: 200,
       })) as unknown as typeof fetch;
 
     const n = next();
-    const res = await budgetBreaker(ctx(), n.fn);
+    const res = await budgetBreaker(DEFAULT_DAILY_BUDGET_USD, "sk-or-test")(ctx(), n.fn);
 
     expect(res).toBeUndefined();
     expect(n.called()).toBe(true);
   });
 
   it("blocks when daily spend reaches the budget", async () => {
-    process.env.UPSTREAM_SK = "sk-or-test";
-    setSystemTime(realNow + 122_000);
-    globalThis.fetch = (async () => spendResponse(2.5)) as unknown as typeof fetch;
+    setSystemTime(realNow + 22 * 86_400_000);
+    globalThis.fetch = (async () =>
+      spendResponse(DEFAULT_DAILY_BUDGET_USD * 2)) as unknown as typeof fetch;
 
     const n = next();
-    const res = await budgetBreaker(ctx(), n.fn);
+    const res = await budgetBreaker(DEFAULT_DAILY_BUDGET_USD, "sk-or-test")(ctx(), n.fn);
 
     expect(res?.status).toBe(503);
     expect(n.called()).toBe(false);
@@ -149,14 +152,13 @@ describe("budgetBreaker", () => {
   });
 
   it("keeps the last known spend when the lookup errors", async () => {
-    process.env.UPSTREAM_SK = "sk-or-test";
-    setSystemTime(realNow + 183_000);
+    setSystemTime(realNow + 23 * 86_400_000);
     globalThis.fetch = (async () => {
       throw new Error("network down");
     }) as unknown as typeof fetch;
 
     const n = next();
-    const res = await budgetBreaker(ctx(), n.fn);
+    const res = await budgetBreaker(DEFAULT_DAILY_BUDGET_USD, "sk-or-test")(ctx(), n.fn);
 
     expect(res?.status).toBe(503);
     expect(n.called()).toBe(false);
@@ -167,24 +169,24 @@ describe("budgetBreaker", () => {
 
     for (let i = 0; i < DAILY_REQUEST_FALLBACK; i++) {
       const n = next();
-      const res = await budgetBreaker(ctx(), n.fn);
+      const res = await budgetBreaker(DEFAULT_DAILY_BUDGET_USD, "")(ctx(), n.fn);
 
       expect(res).toBeUndefined();
       expect(n.called()).toBe(true);
     }
 
     const n = next();
-    const res = await budgetBreaker(ctx(), n.fn);
+    const res = await budgetBreaker(DEFAULT_DAILY_BUDGET_USD, "")(ctx(), n.fn);
 
     expect(res?.status).toBe(503);
     expect(n.called()).toBe(false);
   });
 
   it("resets the fallback counter at utc midnight", async () => {
-    setSystemTime(realNow + 86_400_000);
+    setSystemTime(realNow + 30 * 86_400_000);
 
     const n = next();
-    const res = await budgetBreaker(ctx(), n.fn);
+    const res = await budgetBreaker(DEFAULT_DAILY_BUDGET_USD, "")(ctx(), n.fn);
 
     expect(res).toBeUndefined();
     expect(n.called()).toBe(true);

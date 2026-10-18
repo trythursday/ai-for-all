@@ -8,10 +8,7 @@ const STYLES = `
   .muted { color: var(--c-gray, #666); font-size: 0.85em; }
 `;
 
-const usd = new Intl.NumberFormat(undefined, {
-  style: "currency",
-  currency: "USD",
-});
+const pct = (value) => `${value.toFixed(2)}%`;
 
 class BalanceWidget extends HTMLElement {
   connectedCallback() {
@@ -25,18 +22,24 @@ class BalanceWidget extends HTMLElement {
     try {
       const res = await fetch("/api/v1/balance");
       const body = await res.json();
-      const balance = body?.payload;
+      const status = body?.payload;
 
-      if (!res.ok || !body?.ok || typeof balance?.remainingUsd !== "number") {
+      if (
+        !res.ok ||
+        !body?.ok ||
+        typeof status?.dailyUsedPercent !== "number" ||
+        typeof status?.monthlyRemainingPercent !== "number"
+      ) {
         return;
       }
 
       shadow.innerHTML = html`
         <style>${r(STYLES)}</style>
         <p>
-          OpenRouter balance: <strong>${usd.format(balance.remainingUsd)}</strong> left
+          Daily budget: <strong>${pct(status.dailyUsedPercent)}</strong> used ·
+          Monthly balance: <strong>${pct(status.monthlyRemainingPercent)}</strong>
           <span class="muted">
-            · updated ${new Date(balance.updatedAt).toLocaleTimeString([], {
+            · updated ${new Date(status.updatedAt).toLocaleTimeString([], {
               hour: "2-digit",
               minute: "2-digit",
             })}

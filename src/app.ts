@@ -36,8 +36,8 @@ export function createApp(config: Config) {
 
   app.use("/api/v1/*", trafficBreaker);
   // Cached, so it stays readable when the daily budget is spent.
-  app.get(...BalanceRoute(config.upstreamSk));
-  app.use("/api/v1/*", budgetBreaker);
+  app.get(...BalanceRoute(config));
+  app.use("/api/v1/*", budgetBreaker(config.budget.dailyUsd, config.upstreamSk));
 
   app.get("/", (c) => c.html(renderHome()));
 

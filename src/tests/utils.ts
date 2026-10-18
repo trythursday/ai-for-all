@@ -1,7 +1,11 @@
 import { createHash } from "node:crypto";
 
 import type { createApp } from "../app";
-import type { Config } from "../config";
+import {
+  DEFAULT_DAILY_BUDGET_USD,
+  DEFAULT_MONTHLY_BUDGET_USD,
+  type Config,
+} from "../config";
 import type { ChallengeResponse, ResponseShape } from "../utils/mod";
 
 export const SECRET = "0123456789abcdef0123456789abcdef";
@@ -26,6 +30,10 @@ export const CONFIG: Config = {
     inputTokens: 16_384,
     outputTokens: 16_384,
     contextTokens: 32_768,
+  },
+  budget: {
+    dailyUsd: DEFAULT_DAILY_BUDGET_USD,
+    monthlyUsd: DEFAULT_MONTHLY_BUDGET_USD,
   },
 };
 

@@ -22,6 +22,10 @@ export interface Config {
     outputTokens: number;
     contextTokens: number;
   };
+  budget: {
+    dailyUsd: number;
+    monthlyUsd: number;
+  };
 }
 
 const REQUIRED = [
@@ -39,7 +43,12 @@ const DEFAULTS = {
   MAX_INPUT_TOKENS: 16_384,
   MAX_OUTPUT_TOKENS: 16_384,
   MAX_CONTEXT_TOKENS: 32_768,
+  DAILY_BUDGET_USD: 0.25,
+  MONTHLY_BUDGET_USD: 5,
 } as const;
+
+export const DEFAULT_DAILY_BUDGET_USD = DEFAULTS.DAILY_BUDGET_USD;
+export const DEFAULT_MONTHLY_BUDGET_USD = DEFAULTS.MONTHLY_BUDGET_USD;
 
 function envInt(name: keyof typeof DEFAULTS) {
   const raw = process.env[name];
@@ -50,6 +59,21 @@ function envInt(name: keyof typeof DEFAULTS) {
 
   if (!Number.isInteger(value) || value < 1) {
     console.error(`${name} must be a positive integer, got: ${raw}`);
+    process.exit(1);
+  }
+
+  return value;
+}
+
+function envUsd(name: "DAILY_BUDGET_USD" | "MONTHLY_BUDGET_USD") {
+  const raw = process.env[name];
+
+  if (raw === undefined) return DEFAULTS[name];
+
+  const value = Number(raw);
+
+  if (!Number.isFinite(value) || value <= 0) {
+    console.error(`${name} must be a positive number, got: ${raw}`);
     process.exit(1);
   }
 
@@ -93,6 +117,10 @@ export function loadConfig(): Config {
       inputTokens: envInt("MAX_INPUT_TOKENS"),
       outputTokens: envInt("MAX_OUTPUT_TOKENS"),
       contextTokens: envInt("MAX_CONTEXT_TOKENS"),
+    },
+    budget: {
+      dailyUsd: envUsd("DAILY_BUDGET_USD"),
+      monthlyUsd: envUsd("MONTHLY_BUDGET_USD"),
     },
   };
 }

@@ -9,6 +9,33 @@ export interface Balance {
   updatedAt: string;
 }
 
+export interface BudgetStatus {
+  dailyUsedPercent: number;
+  monthlyRemainingPercent: number;
+  updatedAt: string;
+}
+
+// Rounded to two decimals and clamped, so the page never shows a negative
+// balance or a value the breaker has already stopped acting on.
+function percent(part: number, whole: number) {
+  if (whole <= 0) return 0;
+
+  return Math.min(100, Math.max(0, Math.round((part / whole) * 10_000) / 100));
+}
+
+export function budgetStatus(
+  dailySpentUsd: number,
+  balance: Balance,
+  dailyBudgetUsd: number,
+  monthlyBudgetUsd: number,
+): BudgetStatus {
+  return {
+    dailyUsedPercent: percent(dailySpentUsd, dailyBudgetUsd),
+    monthlyRemainingPercent: percent(balance.remainingUsd, monthlyBudgetUsd),
+    updatedAt: balance.updatedAt,
+  };
+}
+
 const KeyBalanceSchema = z.object({
   data: z.object({
     limit_remaining: z.optional(z.nullable(z.number())),

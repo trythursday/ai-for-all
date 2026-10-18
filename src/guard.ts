@@ -8,8 +8,6 @@ export const HOURLY_WINDOW_MS = 3_600_000;
 
 export const HOURLY_REQUEST_CAP = 2_000;
 
-export const DAILY_BUDGET_USD = 2;
-
 export const DAILY_REQUEST_FALLBACK = 1_000;
 
 export const SPEND_URL = "https://openrouter.ai/api/v1/key";
@@ -46,9 +44,7 @@ export async function trafficBreaker(c: Context, next: Next) {
 let spendAt = 0;
 let spendUsd: number | null = null;
 
-async function dailySpend(): Promise<number | null> {
-  const token = process.env.UPSTREAM_SK;
-
+export async function dailySpend(token: string): Promise<number | null> {
   if (!token) return null;
   if (Date.now() - spendAt < SPEND_CACHE_MS) return spendUsd;
 
@@ -92,21 +88,23 @@ function fallbackExhausted() {
   return ++requestCount > DAILY_REQUEST_FALLBACK;
 }
 
-export async function budgetBreaker(c: Context, next: Next) {
-  const spend = await dailySpend();
-  const exhausted =
-    spend === null ? fallbackExhausted() : spend >= DAILY_BUDGET_USD;
+export function budgetBreaker(dailyBudgetUsd: number, upstreamSk: string) {
+  return async (c: Context, next: Next) => {
+    const spend = await dailySpend(upstreamSk);
+    const exhausted =
+      spend === null ? fallbackExhausted() : spend >= dailyBudgetUsd;
 
-  if (exhausted) {
-    return c.json(
-      apiError(
-        "The daily budget is spent. Try again tomorrow.",
-        "server_error",
-        "budget_exhausted",
-      ),
-      503,
-    );
-  }
+    if (exhausted) {
+      return c.json(
+        apiError(
+          "The daily budget is spent. Try again tomorrow.",
+          "server_error",
+          "budget_exhausted",
+        ),
+        503,
+      );
+    }
 
-  return next();
+    return next();
+  };
 }
