@@ -4,20 +4,29 @@ import { createApp } from "../app";
 import { renderHome } from "../home";
 import { CONFIG } from "./utils";
 
+const WIDGETS = {
+  "api-key-widget.js": "api-key-widget",
+  "balance-widget.js": "balance-widget",
+};
+
 describe("home", () => {
-  it("renders the README around the widget", () => {
+  it("renders the README with both widgets and their scripts", () => {
     const home = renderHome();
 
     expect(home).toContain("<api-key-widget>");
+    expect(home).toContain("<balance-widget>");
     expect(home).toContain("https://ai-for-all.trythursday.org");
-    expect(home).toContain('src="/widget.js"');
+
+    for (const name of Object.keys(WIDGETS)) {
+      expect(home).toContain(`src="/${name}"`);
+    }
   });
 
-  it("serves the widget as a module", async () => {
-    const res = await createApp(CONFIG).request("http://x/widget.js");
+  it.each(Object.entries(WIDGETS))("serves %s as a module", async (name, tag) => {
+    const res = await createApp(CONFIG).request(`http://x/${name}`);
 
     expect(res.status).toBe(200);
     expect(res.headers.get("content-type")).toStartWith("text/javascript");
-    expect(await res.text()).toContain('customElements.define("api-key-widget"');
+    expect(await res.text()).toContain(`customElements.define("${tag}"`);
   });
 });

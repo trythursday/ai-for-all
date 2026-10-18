@@ -67,17 +67,40 @@ function digest(input: string) {
   return createHash("sha256").update(input).digest("hex");
 }
 
+function challengeForToken(token: string, i: number, s: number, d: number) {
+  const saltSeed = fnv1aResume(fnv1a(token), String(i + 1));
+
+  return {
+    salt: prng(saltSeed, s),
+    target: prng(fnv1aResume(saltSeed, "d"), d),
+  };
+}
+
 export function solve(token: string, c: number, s: number, d: number) {
-  const tokenFnv = fnv1a(token);
   const solutions: number[] = [];
 
   for (let i = 0; i < c; i++) {
-    const saltSeed = fnv1aResume(tokenFnv, String(i + 1));
-    const salt = prng(saltSeed, s);
-    const target = prng(fnv1aResume(saltSeed, "d"), d);
+    const { salt, target } = challengeForToken(token, i, s, d);
 
     let nonce = 0;
     while (!digest(salt + nonce).startsWith(target)) nonce++;
+
+    solutions.push(nonce);
+  }
+
+  return solutions;
+}
+
+// A well-formed solution that is guaranteed not to verify, unlike a hardcoded
+// nonce: at difficulty 1 the real nonce is 0 one time in sixteen.
+export function solveWrong(token: string, c: number, s: number, d: number) {
+  const solutions: number[] = [];
+
+  for (let i = 0; i < c; i++) {
+    const { salt, target } = challengeForToken(token, i, s, d);
+
+    let nonce = 0;
+    while (digest(salt + nonce).startsWith(target)) nonce++;
 
     solutions.push(nonce);
   }

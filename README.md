@@ -4,9 +4,8 @@ A free, captcha-gated proxy for AI inference. No account, no API key to buy.
 
 <api-key-widget>
   <p>
-    <strong>Get an API key</strong> —
-    <a href="https://ai-for-all.trythursday.org">solve a short proof-of-work challenge on the live site</a>.
-    No account needed.
+    One click to
+    <a href="https://ai-for-all.trythursday.org">get an API key</a>.
   </p>
 </api-key-widget>
 
@@ -70,12 +69,17 @@ curl https://ai-for-all.trythursday.org/api/v1/chat/completions \
 
 ### `GET /models`
 
-Lists the model aliases.
+Lists the model aliases and what they point at.
 
-- `local` · cheap, the default
-- `frontier` · bigger, for when `local` isn't enough
+- `local` · `qwen/qwen3.8-flash` (Qwen3.8 Flash), provider-default quant ·
+  cheap, the default
+- `frontier` · `deepseek/deepseek-v4.1-flash` (DeepSeek V4.1 Flash), fp8 only ·
+  bigger, for when `local` isn't enough
 
 ## Help me
+
+<balance-widget>
+</balance-widget>
 
 If you think this is an interesting idea, you can kick a few bucks my way to
 help keep the service running. If you use AI For All and find it helpful or

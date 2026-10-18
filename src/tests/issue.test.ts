@@ -1,7 +1,8 @@
 import { describe, expect, it } from "bun:test";
 
 import { createApp } from "../app";
-import { CONFIG, challengeFor, issue, post, solve } from "./utils";
+import { KEY_TTL_MS } from "../keys";
+import { CONFIG, challengeFor, issue, post, solve, solveWrong } from "./utils";
 
 describe("issue", () => {
   it("mints a 32-char key with expiry headers", async () => {
@@ -15,7 +16,12 @@ describe("issue", () => {
     expect(body.ok).toBe(true);
     expect(body.payload!.apiKey).toStartWith("sk-th-");
     expect(body.payload!.apiKey).toHaveLength(32);
-    expect(headers.get("x-key-ttl")).toBe("2592000000");
+
+    // The header is expires - Date.now(), so a clock tick can shave a few ms.
+    const ttl = Number(headers.get("x-key-ttl"));
+
+    expect(Math.abs(ttl - KEY_TTL_MS)).toBeLessThan(1_000);
+
     expect(Date.parse(headers.get("x-key-expires-at")!)).toBeGreaterThan(
       Date.now(),
     );
@@ -49,7 +55,10 @@ describe("issue", () => {
 
     const rejected = await issue(
       app,
-      { token, solutions: Array(challenge.c).fill(0) },
+      {
+        token,
+        solutions: solveWrong(token, challenge.c, challenge.s, challenge.d),
+      },
       "4.4.4.4",
     );
     expect(rejected.body.error?.code).toBe("invalid_solution");

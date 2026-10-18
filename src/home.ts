@@ -13,7 +13,8 @@ const page = template<{ content: string }>(`<!doctype html>
   </head>
   <body>
     {{{content}}}
-    <script type="module" src="/widget.js"></script>
+    <script type="module" src="/api-key-widget.js"></script>
+    <script type="module" src="/balance-widget.js"></script>
   </body>
 </html>`);
 

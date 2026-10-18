@@ -243,8 +243,8 @@ class ApiKeyWidget extends HTMLElement {
       "Get an API key",
       html`
         <p>
-          Solve a short proof-of-work challenge and get a key valid for 30 days.
-          One key per day per IP; no account needed.
+          One click to get a key valid for 30 days. 60 requests/hr/key. 16k
+          in/out, 32k total context.
         </p>
         <p class="row"><button data-start>Solve the challenge</button></p>
       `,
