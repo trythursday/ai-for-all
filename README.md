@@ -96,6 +96,11 @@ If you can't contribute financially or by forwarding the service - sharing helps
 Show it to your friends. Build cool stuff. Leave me feedback on Thursday. Or
 send a nice email showing me what you built, or just say hi!
 
+<nav>
+
 - [Contact](https://shantaram.xyz/contact/)
 - [Donate](https://shantaram.xyz/contact/donate.html)
+- [GitHub](https://github.com/trythursday/ai-for-all)
 - [Thursday issue tracker](https://github.com/trythursday/thursday)
+
+</nav>
