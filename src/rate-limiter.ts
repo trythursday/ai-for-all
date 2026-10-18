@@ -1,7 +1,7 @@
 import type { Context } from "hono";
 import { rateLimiter } from "hono-rate-limiter";
 
-import { clientIp } from "./utils/mod";
+import { apiError, clientIp } from "./utils/mod";
 
 export type KeyBy = "ip" | "authz";
 
@@ -24,5 +24,16 @@ export function RateLimiterFactory(
         c.req.header("authorization")?.replace(/^Bearer\s+/i, "") ?? "unknown"
       );
     },
+    // The library defaults to a text/plain body, which OpenAI clients cannot
+    // parse, so return the same envelope as every other error.
+    handler: (c: Context) =>
+      c.json(
+        apiError(
+          "Too many requests. Try again later.",
+          "rate_limit_error",
+          "rate_limit_exceeded",
+        ),
+        429,
+      ),
   });
 }

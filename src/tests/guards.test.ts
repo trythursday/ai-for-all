@@ -1,6 +1,7 @@
 import process from "node:process";
 
 import { afterAll, afterEach, describe, expect, it, setSystemTime } from "bun:test";
+import { Hono } from "hono";
 import type { Context, Next } from "hono";
 
 import {
@@ -9,6 +10,7 @@ import {
   budgetBreaker,
   trafficBreaker,
 } from "../guard";
+import { RateLimiterFactory } from "../rate-limiter";
 import { clientIp } from "../utils/mod";
 
 const realNow = Date.now();
@@ -74,6 +76,35 @@ describe("clientIp", () => {
 
   it("returns unknown when neither header is present", () => {
     expect(clientIp(ctx())).toBe("unknown");
+  });
+});
+
+describe("RateLimiterFactory", () => {
+  it("answers a blocked request with the API error envelope", async () => {
+    setSystemTime(realNow + 30 * 86_400_000);
+
+    const app = new Hono();
+    app.get("/x", RateLimiterFactory("ip", 60_000, 1), (c) => c.text("ok"));
+
+    const first = await app.request("http://x/x", {
+      headers: { "cf-connecting-ip": "203.0.113.1" },
+    });
+    expect(first.status).toBe(200);
+
+    const blocked = await app.request("http://x/x", {
+      headers: { "cf-connecting-ip": "203.0.113.1" },
+    });
+
+    expect(blocked.status).toBe(429);
+    expect(blocked.headers.get("content-type")).toContain("application/json");
+    expect(await blocked.json()).toMatchObject({
+      ok: false,
+      error: {
+        message: "Too many requests. Try again later.",
+        type: "rate_limit_error",
+        code: "rate_limit_exceeded",
+      },
+    });
   });
 });
 
