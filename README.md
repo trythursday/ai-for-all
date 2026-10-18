@@ -2,6 +2,14 @@
 
 A free, captcha-gated proxy for AI inference. No account, no API key to buy.
 
+<api-key-widget>
+  <p>
+    <strong>Get an API key</strong> —
+    <a href="https://ai-for-all.trythursday.org">solve a short proof-of-work challenge on the live site</a>.
+    No account needed.
+  </p>
+</api-key-widget>
+
 ## Why?
 
 When [I](https://shantaram.xyz) was a youngin coming up in the brand new world
@@ -26,7 +34,7 @@ models as it is an experiment in human kindness.
 Errors return `{ ok: false, error: { message, type, code } }`. Successful
 inference responses are standard OpenAI chat completions.
 
-Base URL: `https://<this host>/api/v1`
+Base URL: `https://ai-for-all.trythursday.org/api/v1`
 
 ### `POST /issue/challenge`
 
@@ -54,7 +62,7 @@ Limits: 16k input tokens, 16k output tokens, 32k context. `max_tokens` is
 clamped to whatever room is left.
 
 ```sh
-curl https://<this host>/api/v1/chat/completions \
+curl https://ai-for-all.trythursday.org/api/v1/chat/completions \
   -H "Authorization: Bearer sk-th-..." \
   -H "Content-Type: application/json" \
   -d '{"model": "local", "messages": [{"role": "user", "content": "hi"}]}'

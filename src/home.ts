@@ -13,6 +13,7 @@ const page = template<{ content: string }>(`<!doctype html>
   </head>
   <body>
     {{{content}}}
+    <script type="module" src="/widget.js"></script>
   </body>
 </html>`);
 

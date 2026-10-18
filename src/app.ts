@@ -10,6 +10,10 @@ import {
   ModelsRoute,
 } from "./routes";
 
+const widget = await Bun.file(
+  new URL("./client/widget.js", import.meta.url),
+).text();
+
 export function createApp(config: Config) {
   const app = new Hono();
 
@@ -28,6 +32,11 @@ export function createApp(config: Config) {
   app.use("/api/v1/*", budgetBreaker);
 
   app.get("/", (c) => c.html(renderHome()));
+  app.get("/widget.js", (c) =>
+    c.body(widget, 200, {
+      "content-type": "text/javascript; charset=utf-8",
+    }),
+  );
   app.get(...ModelsRoute());
   app.post(...IssueChallengeRoute(config));
   app.post(...IssueTokenRoute(config.secret, consumeNonce));
