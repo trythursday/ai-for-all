@@ -1,0 +1,13 @@
+{
+  "devDependencies": {
+    "@types/bun": "latest"
+  },
+  "dependencies": {
+    "@jsr/campfire__core": "^4.0.4",
+    "capjs-core": "^0.1.5",
+    "hono": "^4.13.13",
+    "hono-rate-limiter": "^0.5.4",
+    "zod": "^4.6.7"
+  },
+  "module": "src/main.ts"
+}

@@ -1,0 +1,215 @@
+import { afterEach, describe, expect, it } from "bun:test";
+
+import { createApp } from "../app";
+import { mintKey } from "../keys";
+import { CONFIG } from "./utils";
+
+const realFetch = globalThis.fetch;
+
+afterEach(() => {
+  globalThis.fetch = realFetch;
+});
+
+function chat(
+  app: ReturnType<typeof createApp>,
+  body: unknown,
+  authorization = `Bearer ${mintKey().apiKey}`,
+) {
+  return app.request("http://x/api/v1/chat/completions", {
+    method: "POST",
+    headers: { "content-type": "application/json", authorization },
+    body: JSON.stringify(body),
+  });
+}
+
+function stubUpstream() {
+  const seen: { url: string; body: any; auth: string | null }[] = [];
+
+  globalThis.fetch = (async (request: Request) => {
+    seen.push({
+      url: request.url,
+      body: JSON.parse(await request.text()),
+      auth: request.headers.get("authorization"),
+    });
+
+    return new Response(
+      JSON.stringify({ choices: [{ message: { content: "hi" } }] }),
+      { status: 200, headers: { "content-type": "application/json" } },
+    );
+  }) as unknown as typeof fetch;
+
+  return seen;
+}
+
+describe("chat", () => {
+  it("rejects a missing key", async () => {
+    const app = createApp(CONFIG);
+    const res = await chat(app, { messages: [] }, "");
+
+    expect(res.status).toBe(401);
+    expect(await res.json()).toMatchObject({
+      ok: false,
+      error: { code: "invalid_api_key" },
+    });
+  });
+
+  it("rejects an unknown model", async () => {
+    const app = createApp(CONFIG);
+    const res = await chat(app, { model: "gpt-9", messages: [] });
+
+    expect(res.status).toBe(400);
+    expect(await res.json()).toMatchObject({
+      error: { code: "invalid_model" },
+    });
+  });
+
+  it("rejects a body without messages", async () => {
+    const app = createApp(CONFIG);
+    const res = await chat(app, { model: "local" });
+
+    expect(res.status).toBe(400);
+    expect(await res.json()).toMatchObject({
+      error: { code: "invalid_request" },
+    });
+  });
+
+  it("defaults to local and swaps in the upstream model", async () => {
+    const seen = stubUpstream();
+    const app = createApp(CONFIG);
+
+    const res = await chat(app, { messages: [{ role: "user", content: "hi" }] });
+
+    expect(res.status).toBe(200);
+    expect(seen[0]?.url).toBe("http://upstream.test/chat/completions");
+    expect(seen[0]?.body.model).toBe(CONFIG.models.local);
+    expect(seen[0]?.auth).toBe(`Bearer ${CONFIG.upstreamSk}`);
+  });
+
+  it("maps the frontier alias", async () => {
+    const seen = stubUpstream();
+    const app = createApp(CONFIG);
+
+    await chat(app, { model: "frontier", messages: [] });
+
+    expect(seen[0]?.body.model).toBe(CONFIG.models.frontier);
+  });
+
+  it("clamps max_tokens", async () => {
+    const seen = stubUpstream();
+    const app = createApp(CONFIG);
+
+    await chat(app, { messages: [], max_tokens: 999_999 });
+
+    expect(seen[0]?.body.max_tokens).toBe(CONFIG.limits.outputTokens);
+  });
+
+  it("fills in max_tokens when omitted", async () => {
+    const seen = stubUpstream();
+    const app = createApp(CONFIG);
+
+    await chat(app, { messages: [] });
+
+    expect(seen[0]?.body.max_tokens).toBe(CONFIG.limits.outputTokens);
+  });
+
+  it("keeps a max_tokens under the cap", async () => {
+    const seen = stubUpstream();
+    const app = createApp(CONFIG);
+
+    await chat(app, { messages: [], max_tokens: 100 });
+
+    expect(seen[0]?.body.max_tokens).toBe(100);
+  });
+
+  it("rejects input over the input cap", async () => {
+    const app = createApp(CONFIG);
+    const content = "x".repeat(CONFIG.limits.inputTokens * 4);
+
+    const res = await chat(app, { messages: [{ role: "user", content }] });
+
+    expect(res.status).toBe(400);
+    expect(await res.json()).toMatchObject({
+      error: { code: "context_length_exceeded" },
+    });
+  });
+
+  it("clamps output to the remaining context", async () => {
+    const seen = stubUpstream();
+    const app = createApp({
+      ...CONFIG,
+      limits: { ...CONFIG.limits, contextTokens: 10_000 },
+    });
+    const content = "x".repeat(8_000);
+
+    await chat(app, { messages: [{ role: "user", content }], max_tokens: 16_000 });
+
+    const estimated = Math.ceil(
+      JSON.stringify([{ role: "user", content }]).length / 4,
+    );
+    expect(seen[0]?.body.max_tokens).toBe(10_000 - estimated);
+  });
+
+  it("passes tools through untouched", async () => {
+    const seen = stubUpstream();
+    const app = createApp(CONFIG);
+    const tools = [{ type: "function", function: { name: "x" } }];
+
+    await chat(app, { messages: [], tools });
+
+    expect(seen[0]?.body.tools).toEqual(tools);
+  });
+
+  it("drops fields a client tries to smuggle to the upstream", async () => {
+    const seen = stubUpstream();
+    const app = createApp(CONFIG);
+
+    await chat(app, {
+      messages: [],
+      provider: { sort: "throughput" },
+      models: ["some/other-model"],
+      transforms: ["middle-out"],
+      route: "fallback",
+      plugins: [],
+    });
+
+    expect(seen[0]?.body.models).toBeUndefined();
+    expect(seen[0]?.body.transforms).toBeUndefined();
+    expect(seen[0]?.body.route).toBeUndefined();
+    expect(seen[0]?.body.plugins).toBeUndefined();
+  });
+
+  it("applies the frontier routing prefs, overriding a client provider", async () => {
+    const seen = stubUpstream();
+    const app = createApp(CONFIG);
+
+    await chat(app, {
+      model: "frontier",
+      messages: [],
+      provider: { sort: "throughput", max_price: { prompt: 99, completion: 99 } },
+    });
+
+    expect(seen[0]?.body.provider).toEqual(CONFIG.providers.frontier);
+  });
+
+  it("sends no provider prefs for local", async () => {
+    const seen = stubUpstream();
+    const app = createApp(CONFIG);
+
+    await chat(app, { model: "local", messages: [] });
+
+    expect(seen[0]?.body.provider).toBeUndefined();
+  });
+});
+
+describe("models", () => {
+  it("lists the aliases", async () => {
+    const app = createApp(CONFIG);
+    const res = await app.request("http://x/api/v1/models");
+
+    expect(res.status).toBe(200);
+    expect(await res.json()).toMatchObject({
+      object: "list",
+      data: [{ id: "local" }, { id: "frontier" }],
+    });
+  });
+});
