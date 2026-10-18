@@ -1,7 +1,8 @@
 import type { Context } from "hono";
 import { proxy } from "hono/proxy";
 
-import type { Config } from "../config";
+import { OPENROUTER_URL, type Config } from "../config";
+import { keyId } from "../ids";
 import { isValidKey } from "../keys";
 import { RateLimiterFactory } from "../rate-limiter";
 import { MODELS, apiError, type ModelName } from "../utils/mod";
@@ -25,7 +26,9 @@ function bearer(c: Context) {
 }
 
 async function chatHandler(c: Context, config: Config) {
-  if (!isValidKey(bearer(c))) {
+  const apiKey = bearer(c);
+
+  if (!isValidKey(apiKey)) {
     return c.json(
       apiError("Invalid API key.", "invalid_request_error", "invalid_api_key"),
       401,
@@ -97,13 +100,15 @@ async function chatHandler(c: Context, config: Config) {
 
   body.max_tokens = outputTokens;
 
-  if (config.openrouter) {
-    body.reasoning = {
-      max_tokens: Math.min(MAX_REASONING_TOKENS, Math.floor(outputTokens / 4)),
-    };
-  }
+  body.reasoning = {
+    max_tokens: Math.min(MAX_REASONING_TOKENS, Math.floor(outputTokens / 4)),
+  };
 
-  return proxy(`${config.upstreamUrl}/chat/completions`, {
+  // Without this, every request shares one account-level upstream identity and
+  // a provider block for one user's spam would land on all of them.
+  body.user = keyId(config.secret, apiKey);
+
+  return proxy(`${OPENROUTER_URL}/chat/completions`, {
     method: "POST",
     headers: {
       authorization: `Bearer ${config.upstreamSk}`,

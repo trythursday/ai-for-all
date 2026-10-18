@@ -2,6 +2,7 @@ import process from "node:process";
 
 import type { Context, Next } from "hono";
 
+import { OPENROUTER_URL } from "./config";
 import { KeyUsageSchema, apiError } from "./utils/mod";
 
 export const HOURLY_WINDOW_MS = 3_600_000;
@@ -10,7 +11,7 @@ export const HOURLY_REQUEST_CAP = 2_000;
 
 export const DAILY_REQUEST_FALLBACK = 1_000;
 
-export const SPEND_URL = "https://openrouter.ai/api/v1/key";
+export const SPEND_URL = `${OPENROUTER_URL}/key`;
 
 export const SPEND_CACHE_MS = 60_000;
 

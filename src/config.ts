@@ -5,11 +5,13 @@ export interface ProviderPrefs {
   max_price?: { prompt: number; completion: number };
 }
 
+// Every part of the service talks to OpenRouter: the proxy, the balance and the
+// spend lookup. There is nothing to configure.
+export const OPENROUTER_URL = "https://openrouter.ai/api/v1";
+
 export interface Config {
   secret: string;
-  upstreamUrl: string;
   upstreamSk: string;
-  openrouter: boolean;
   models: Record<string, string>;
   providers: Record<string, ProviderPrefs>;
   challenge: {
@@ -30,7 +32,6 @@ export interface Config {
 
 const REQUIRED = [
   "CAP_SECRET",
-  "UPSTREAM_URL",
   "UPSTREAM_SK",
   "UPSTREAM_MODEL_LOCAL",
   "UPSTREAM_MODEL_FRONTIER",
@@ -90,11 +91,7 @@ export function loadConfig(): Config {
 
   return {
     secret: process.env.CAP_SECRET!,
-    upstreamUrl: process.env.UPSTREAM_URL!,
     upstreamSk: process.env.UPSTREAM_SK!,
-    openrouter: new URL(process.env.UPSTREAM_URL!).hostname.includes(
-      "openrouter",
-    ),
     models: {
       local: process.env.UPSTREAM_MODEL_LOCAL!,
       frontier: process.env.UPSTREAM_MODEL_FRONTIER!,

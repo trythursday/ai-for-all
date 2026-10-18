@@ -12,9 +12,7 @@ export const SECRET = "0123456789abcdef0123456789abcdef";
 
 export const CONFIG: Config = {
   secret: SECRET,
-  upstreamUrl: "http://upstream.test",
   upstreamSk: "sk-or-test",
-  openrouter: true,
   models: { local: "test/local", frontier: "test/frontier" },
   providers: {
     local: {},

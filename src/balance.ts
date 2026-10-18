@@ -1,6 +1,8 @@
 import * as z from "zod/mini";
 
-export const BALANCE_URL = "https://openrouter.ai/api/v1/key";
+import { OPENROUTER_URL } from "./config";
+
+export const BALANCE_URL = `${OPENROUTER_URL}/key`;
 
 export const BALANCE_CACHE_MS = 300_000;
 

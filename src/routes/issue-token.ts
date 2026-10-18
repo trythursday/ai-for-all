@@ -1,6 +1,7 @@
 import type { Context } from "hono";
 import { validateChallenge } from "capjs-core";
 
+import { mintId } from "../ids";
 import { mintKey } from "../keys";
 import { RateLimiterFactory } from "../rate-limiter";
 import {
@@ -42,9 +43,8 @@ async function issueTokenHandler(
 
   const { apiKey, expires } = mintKey();
 
-  // Enough of the key to correlate with chat traffic, not enough to use it.
   console.log(
-    `minted ${apiKey.slice(0, 12)} ip=${clientIp(c)} expires=${new Date(expires).toISOString()}`,
+    `minted id=${mintId(secret, apiKey, clientIp(c))} expires=${new Date(expires).toISOString()}`,
   );
 
   c.header("X-Key-Expires-At", new Date(expires).toISOString());

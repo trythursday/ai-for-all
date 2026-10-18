@@ -1,6 +1,7 @@
 import { afterEach, describe, expect, it } from "bun:test";
 
 import { createApp } from "../app";
+import { keyId } from "../ids";
 import { mintKey } from "../keys";
 import { CONFIG } from "./utils";
 
@@ -80,7 +81,7 @@ describe("chat", () => {
     const res = await chat(app, { messages: [{ role: "user", content: "hi" }] });
 
     expect(res.status).toBe(200);
-    expect(seen[0]?.url).toBe("http://upstream.test/chat/completions");
+    expect(seen[0]?.url).toBe("https://openrouter.ai/api/v1/chat/completions");
     expect(seen[0]?.body.model).toBe(CONFIG.models.local);
     expect(seen[0]?.auth).toBe(`Bearer ${CONFIG.upstreamSk}`);
   });
@@ -139,13 +140,34 @@ describe("chat", () => {
     expect(seen[0]?.body.reasoning).toEqual({ max_tokens: 2_048 });
   });
 
-  it("leaves reasoning alone for other upstreams", async () => {
+  it("sends a stable user id derived from the key", async () => {
     const seen = stubUpstream();
-    const app = createApp({ ...CONFIG, openrouter: false });
+    const app = createApp(CONFIG);
+    const { apiKey } = mintKey();
+    const authorization = `Bearer ${apiKey}`;
 
-    await chat(app, { messages: [] });
+    await chat(app, { messages: [] }, authorization);
+    await chat(app, { messages: [] }, authorization);
 
-    expect(seen[0]?.body.reasoning).toBeUndefined();
+    const expected = keyId(CONFIG.secret, apiKey);
+
+    expect(seen[0]?.body.user).toBe(expected);
+    expect(seen[1]?.body.user).toBe(expected);
+    expect(expected).not.toContain(apiKey);
+  });
+
+  it("ignores a client-supplied user", async () => {
+    const seen = stubUpstream();
+    const app = createApp(CONFIG);
+    const { apiKey } = mintKey();
+
+    await chat(
+      app,
+      { messages: [], user: "someone-else" },
+      `Bearer ${apiKey}`,
+    );
+
+    expect(seen[0]?.body.user).toBe(keyId(CONFIG.secret, apiKey));
   });
 
   it("rejects input over the input cap", async () => {

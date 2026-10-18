@@ -9,7 +9,6 @@ import {
 
 const REQUIRED = {
   CAP_SECRET: "0123456789abcdef0123456789abcdef",
-  UPSTREAM_URL: "https://openrouter.ai/api/v1",
   UPSTREAM_SK: "sk-or-test",
   UPSTREAM_MODEL_LOCAL: "test/local",
   UPSTREAM_MODEL_FRONTIER: "test/frontier",

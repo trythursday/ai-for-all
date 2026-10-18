@@ -1,8 +1,17 @@
 import { describe, expect, it } from "bun:test";
 
 import { createApp } from "../app";
+import { mintId } from "../ids";
 import { KEY_TTL_MS } from "../keys";
-import { CONFIG, challengeFor, issue, post, solve, solveWrong } from "./utils";
+import {
+  CONFIG,
+  SECRET,
+  challengeFor,
+  issue,
+  post,
+  solve,
+  solveWrong,
+} from "./utils";
 
 describe("issue", () => {
   it("mints a 32-char key with expiry headers", async () => {
@@ -27,7 +36,7 @@ describe("issue", () => {
     );
   });
 
-  it("logs the minted key prefix and ip, never the key", async () => {
+  it("logs a salted id instead of the key or ip", async () => {
     const app = createApp(CONFIG);
     const { challenge, token } = await challengeFor(app, "6.6.6.6");
     const lines: string[] = [];
@@ -53,9 +62,18 @@ describe("issue", () => {
     }
 
     expect(lines).toHaveLength(1);
-    expect(lines[0]).toContain(`minted ${apiKey.slice(0, 12)}`);
-    expect(lines[0]).toContain("ip=6.6.6.6");
+    expect(lines[0]).toContain(`minted id=${mintId(SECRET, apiKey, "6.6.6.6")}`);
     expect(lines[0]).not.toContain(apiKey);
+    expect(lines[0]).not.toContain("6.6.6.6");
+  });
+
+  it("gives the same id only for the same key and ip", () => {
+    const first = mintId(SECRET, "sk-th-a", "1.1.1.1");
+
+    expect(mintId(SECRET, "sk-th-a", "1.1.1.1")).toBe(first);
+    expect(mintId(SECRET, "sk-th-a", "2.2.2.2")).not.toBe(first);
+    expect(mintId(SECRET, "sk-th-b", "1.1.1.1")).not.toBe(first);
+    expect(mintId("other-secret", "sk-th-a", "1.1.1.1")).not.toBe(first);
   });
 
   it("rejects a replayed challenge", async () => {

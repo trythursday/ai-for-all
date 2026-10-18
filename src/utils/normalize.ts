@@ -1,6 +1,8 @@
 // The subset of the OpenAI chat body we forward. Anything else a client sends
 // is dropped: they should not know or care how the upstream is backed, and
 // fields like `provider` or `models` would let them steer routing and cost.
+// `user` is set by the proxy to a hash of the caller's key. Letting a client
+// choose it would make everyone share one identity again.
 export const OPENAI_FIELDS = [
   "messages",
   "model",
@@ -22,7 +24,6 @@ export const OPENAI_FIELDS = [
   "logit_bias",
   "presence_penalty",
   "frequency_penalty",
-  "user",
   "metadata",
   "store",
   "service_tier",
