@@ -10,6 +10,7 @@ export const CONFIG: Config = {
   secret: SECRET,
   upstreamUrl: "http://upstream.test",
   upstreamSk: "sk-or-test",
+  openrouter: true,
   models: { local: "test/local", frontier: "test/frontier" },
   providers: {
     local: {},

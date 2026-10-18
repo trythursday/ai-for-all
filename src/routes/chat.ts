@@ -7,6 +7,15 @@ import { RateLimiterFactory } from "../rate-limiter";
 import { MODELS, apiError, type ModelName } from "../utils/mod";
 import { estimateTokens, pickOpenAiFields } from "../utils/normalize";
 
+// Reasoning models spend their output budget thinking before they emit any
+// content, so a tiny max_tokens produces an empty message with
+// finish_reason: "length". Reserve room for an actual answer.
+const MIN_OUTPUT_TOKENS = 1_024;
+
+// OpenRouter caps reasoning per request. A quarter of the budget keeps the
+// default at 2048 while always leaving the rest for visible output.
+const MAX_REASONING_TOKENS = 2_048;
+
 function bearer(c: Context) {
   return c.req.header("authorization")?.replace(/^Bearer\s+/i, "") ?? "";
 }
@@ -71,13 +80,24 @@ async function chatHandler(c: Context, config: Config) {
     body.provider = prefs;
   }
 
-  body.max_tokens = Math.min(
+  const requestedTokens =
     typeof body.max_tokens === "number"
       ? body.max_tokens
-      : config.limits.outputTokens,
+      : config.limits.outputTokens;
+
+  const outputTokens = Math.min(
+    Math.max(requestedTokens, MIN_OUTPUT_TOKENS),
     config.limits.outputTokens,
     contextRoom,
   );
+
+  body.max_tokens = outputTokens;
+
+  if (config.openrouter) {
+    body.reasoning = {
+      max_tokens: Math.min(MAX_REASONING_TOKENS, Math.floor(outputTokens / 4)),
+    };
+  }
 
   return proxy(`${config.upstreamUrl}/chat/completions`, {
     method: "POST",

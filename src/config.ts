@@ -9,6 +9,7 @@ export interface Config {
   secret: string;
   upstreamUrl: string;
   upstreamSk: string;
+  openrouter: boolean;
   models: Record<string, string>;
   providers: Record<string, ProviderPrefs>;
   challenge: {
@@ -67,6 +68,9 @@ export function loadConfig(): Config {
     secret: process.env.CAP_SECRET!,
     upstreamUrl: process.env.UPSTREAM_URL!,
     upstreamSk: process.env.UPSTREAM_SK!,
+    openrouter: new URL(process.env.UPSTREAM_URL!).hostname.includes(
+      "openrouter",
+    ),
     models: {
       local: process.env.UPSTREAM_MODEL_LOCAL!,
       frontier: process.env.UPSTREAM_MODEL_FRONTIER!,

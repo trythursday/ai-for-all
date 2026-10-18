@@ -112,13 +112,40 @@ describe("chat", () => {
     expect(seen[0]?.body.max_tokens).toBe(CONFIG.limits.outputTokens);
   });
 
-  it("keeps a max_tokens under the cap", async () => {
+  it("raises a small max_tokens to the floor", async () => {
     const seen = stubUpstream();
     const app = createApp(CONFIG);
 
     await chat(app, { messages: [], max_tokens: 100 });
 
-    expect(seen[0]?.body.max_tokens).toBe(100);
+    expect(seen[0]?.body.max_tokens).toBe(1_024);
+  });
+
+  it("keeps a max_tokens above the floor", async () => {
+    const seen = stubUpstream();
+    const app = createApp(CONFIG);
+
+    await chat(app, { messages: [], max_tokens: 2_000 });
+
+    expect(seen[0]?.body.max_tokens).toBe(2_000);
+  });
+
+  it("caps reasoning when the upstream is openrouter", async () => {
+    const seen = stubUpstream();
+    const app = createApp(CONFIG);
+
+    await chat(app, { messages: [] });
+
+    expect(seen[0]?.body.reasoning).toEqual({ max_tokens: 2_048 });
+  });
+
+  it("leaves reasoning alone for other upstreams", async () => {
+    const seen = stubUpstream();
+    const app = createApp({ ...CONFIG, openrouter: false });
+
+    await chat(app, { messages: [] });
+
+    expect(seen[0]?.body.reasoning).toBeUndefined();
   });
 
   it("rejects input over the input cap", async () => {
