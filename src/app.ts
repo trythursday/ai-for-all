@@ -1,4 +1,5 @@
 import { Hono } from "hono";
+import { cors } from "hono/cors";
 
 import type { Config } from "./config";
 import { budgetBreaker, trafficBreaker } from "./guard";
@@ -33,6 +34,16 @@ export function createApp(config: Config) {
     nonces.set(sig, Date.now() + ttlMs);
     return true;
   };
+
+  // Ahead of the breakers, so a browser preflight is answered without spending
+  // traffic or budget on an OPTIONS request.
+  app.use(
+    "/api/v1/*",
+    cors({
+      origin: "*",
+      exposeHeaders: ["X-Key-Expires-At", "X-Key-TTL"],
+    }),
+  );
 
   app.use("/api/v1/*", trafficBreaker);
   // Cached, so it stays readable when the daily budget is spent.
