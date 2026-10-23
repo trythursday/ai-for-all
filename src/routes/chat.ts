@@ -28,7 +28,7 @@ function bearer(c: Context) {
 
 async function chatHandler(c: Context, config: Config) {
   const apiKey = bearer(c);
-  const status = keyStatus(apiKey);
+  const status = keyStatus(config.secret, apiKey);
 
   if (status !== "valid") {
     const home = originOf(c);

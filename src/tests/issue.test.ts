@@ -13,7 +13,7 @@ import {
 } from "./utils";
 
 describe("issue", () => {
-  it("mints a 32-char key with expiry headers", async () => {
+  it("mints a signed 29-char key with expiry headers", async () => {
     const app = createApp(CONFIG);
     const { challenge, token } = await challengeFor(app);
     const solutions = solve(token, challenge.c, challenge.s, challenge.d);
@@ -23,7 +23,7 @@ describe("issue", () => {
     expect(status).toBe(201);
     expect(body.ok).toBe(true);
     expect(body.payload!.apiKey).toStartWith("sk-th-");
-    expect(body.payload!.apiKey).toHaveLength(32);
+    expect(body.payload!.apiKey).toHaveLength(29);
 
     // The header is expires - Date.now(), so a clock tick can shave a few ms.
     const ttl = Number(headers.get("x-key-ttl"));

@@ -41,7 +41,7 @@ async function issueTokenHandler(
     );
   }
 
-  const { apiKey, expires } = mintKey();
+  const { apiKey, expires } = mintKey(secret);
 
   console.log(
     `minted id=${mintId(secret, apiKey, clientIp(c))} expires=${new Date(expires).toISOString()}`,

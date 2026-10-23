@@ -15,7 +15,7 @@ afterEach(() => {
 function chat(
   app: ReturnType<typeof createApp>,
   body: unknown,
-  authorization = `Bearer ${mintKey().apiKey}`,
+  authorization = `Bearer ${mintKey(CONFIG.secret).apiKey}`,
   headers: Record<string, string> = {},
 ) {
   return app.request("http://x/api/v1/chat/completions", {
@@ -62,7 +62,7 @@ describe("chat", () => {
 
   it("tells a human when the key expired", async () => {
     const app = createApp(CONFIG);
-    const { apiKey } = mintKey();
+    const { apiKey } = mintKey(CONFIG.secret);
 
     setSystemTime(new Date(Date.now() + 86_400_001));
 
@@ -77,6 +77,35 @@ describe("chat", () => {
     expect(body.error.code).toBe("key_expired");
     expect(body.error.message).toContain("expired");
     expect(body.error.message).toContain("http://x");
+  });
+
+  it("rejects a key whose expiry was edited", async () => {
+    const app = createApp(CONFIG);
+    const { apiKey } = mintKey(CONFIG.secret);
+
+    // Push the encoded expiry one second out, leaving the signature alone.
+    const body = apiKey.slice("sk-th-".length);
+    const extended = (Number.parseInt(body.slice(0, 7), 36) + 1).toString(36);
+
+    const forged = `sk-th-${extended}${body.slice(7)}`;
+    const res = await chat(app, { messages: [] }, `Bearer ${forged}`);
+
+    expect(res.status).toBe(401);
+    expect(await res.json()).toMatchObject({
+      error: { code: "invalid_api_key" },
+    });
+  });
+
+  it("rejects a key signed with another secret", async () => {
+    const app = createApp(CONFIG);
+    const { apiKey } = mintKey("some-other-secret");
+
+    const res = await chat(app, { messages: [] }, `Bearer ${apiKey}`);
+
+    expect(res.status).toBe(401);
+    expect(await res.json()).toMatchObject({
+      error: { code: "invalid_api_key" },
+    });
   });
 
   it("rejects an unknown key with a way to get one", async () => {
@@ -199,7 +228,7 @@ describe("chat", () => {
   it("sends a stable user id derived from the key", async () => {
     const seen = stubUpstream();
     const app = createApp(CONFIG);
-    const { apiKey } = mintKey();
+    const { apiKey } = mintKey(CONFIG.secret);
     const authorization = `Bearer ${apiKey}`;
 
     await chat(app, { messages: [] }, authorization);
@@ -215,7 +244,7 @@ describe("chat", () => {
   it("ignores a client-supplied user", async () => {
     const seen = stubUpstream();
     const app = createApp(CONFIG);
-    const { apiKey } = mintKey();
+    const { apiKey } = mintKey(CONFIG.secret);
 
     await chat(
       app,
@@ -308,7 +337,7 @@ describe("chat", () => {
   it("limits a key to 25 requests an hour", async () => {
     stubUpstream();
     const app = createApp(CONFIG);
-    const authorization = `Bearer ${mintKey().apiKey}`;
+    const authorization = `Bearer ${mintKey(CONFIG.secret).apiKey}`;
 
     for (let i = 0; i < 25; i++) {
       const res = await chat(app, { messages: [] }, authorization);
