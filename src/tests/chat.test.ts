@@ -16,10 +16,15 @@ function chat(
   app: ReturnType<typeof createApp>,
   body: unknown,
   authorization = `Bearer ${mintKey().apiKey}`,
+  headers: Record<string, string> = {},
 ) {
   return app.request("http://x/api/v1/chat/completions", {
     method: "POST",
-    headers: { "content-type": "application/json", authorization },
+    headers: {
+      "content-type": "application/json",
+      authorization,
+      ...headers,
+    },
     body: JSON.stringify(body),
   });
 }
@@ -82,6 +87,27 @@ describe("chat", () => {
     expect(await res.json()).toMatchObject({
       error: { code: "invalid_api_key" },
     });
+  });
+
+  it("links to the forwarded origin, not the internal one", async () => {
+    const app = createApp(CONFIG);
+
+    const res = await chat(
+      app,
+      { messages: [] },
+      "Bearer sk-th-nope",
+      {
+        "x-forwarded-proto": "https",
+        "x-forwarded-host": "ai-for-all.example.org",
+      },
+    );
+
+    const body = (await res.json()) as { error: { message: string } };
+
+    expect(body.error.message).toContain(
+      "https://ai-for-all.example.org",
+    );
+    expect(body.error.message).not.toContain("http://x");
   });
 
   it("rejects an unknown model", async () => {

@@ -9,6 +9,16 @@ export function clientIp(c: Context) {
   );
 }
 
+// The proxy terminates TLS and forwards plain http, so the request url has the
+// wrong scheme and the wrong host. The forwarding headers are the truth.
+export function originOf(c: Context) {
+  const url = new URL(c.req.url);
+  const proto = c.req.header("x-forwarded-proto") ?? url.protocol.slice(0, -1);
+  const host = c.req.header("x-forwarded-host") ?? url.host;
+
+  return `${proto}://${host}`;
+}
+
 export interface ApiError {
   message: string;
   type: string;

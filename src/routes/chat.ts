@@ -5,7 +5,7 @@ import { OPENROUTER_URL, type Config } from "../config";
 import { keyId } from "../ids";
 import { KEY_TTL_MS, keyStatus } from "../keys";
 import { RateLimiterFactory } from "../rate-limiter";
-import { MODELS, apiError, type ModelName } from "../utils/mod";
+import { MODELS, apiError, originOf, type ModelName } from "../utils/mod";
 import { estimateTokens, pickOpenAiFields } from "../utils/normalize";
 
 // The daily budget is shared by everyone, so one ip must not be able to spend
@@ -31,7 +31,7 @@ async function chatHandler(c: Context, config: Config) {
   const status = keyStatus(apiKey);
 
   if (status !== "valid") {
-    const home = new URL(c.req.url).origin;
+    const home = originOf(c);
     const expired = status === "expired";
     const hours = KEY_TTL_MS / 3_600_000;
 
