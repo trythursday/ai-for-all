@@ -9,9 +9,9 @@ import { MODELS, apiError, type ModelName } from "../utils/mod";
 import { estimateTokens, pickOpenAiFields } from "../utils/normalize";
 
 // The daily budget is shared by everyone, so one ip must not be able to spend
-// it alone. At 15 an hour an ip stays a fair share of a 0.25 day. Keys are
+// it alone. At 25 an hour an ip stays a fair share of a 0.25 day. Keys are
 // disposable, so the ip is what gets counted; the key limiter is a backstop.
-const REQUESTS_PER_HOUR = 15;
+const REQUESTS_PER_HOUR = 25;
 
 // Reasoning models spend their output budget thinking before they emit any
 // content, so a tiny max_tokens produces an empty message with

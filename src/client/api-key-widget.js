@@ -223,7 +223,7 @@ class ApiKeyWidget extends HTMLElement {
               : ""}
           </p>
           <p class="muted">
-            Base URL: <code>${location.origin}/api/v1</code> — 15 requests an
+            Base URL: <code>${location.origin}/api/v1</code> — 25 requests an
             hour, 32k context.
           </p>
         `,
@@ -244,7 +244,7 @@ class ApiKeyWidget extends HTMLElement {
       "Get an API key",
       html`
         <p>
-          One click to get a key valid for 24 hours. 15 requests/hr per IP. 16k
+          One click to get a key valid for 24 hours. 25 requests/hr per IP. 16k
           in/out, 32k total context.
         </p>
         <p class="row"><button data-start>Solve the challenge</button></p>

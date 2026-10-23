@@ -279,12 +279,12 @@ describe("chat", () => {
     expect(seen[0]?.body.provider).toBeUndefined();
   });
 
-  it("limits a key to 15 requests an hour", async () => {
+  it("limits a key to 25 requests an hour", async () => {
     stubUpstream();
     const app = createApp(CONFIG);
     const authorization = `Bearer ${mintKey().apiKey}`;
 
-    for (let i = 0; i < 15; i++) {
+    for (let i = 0; i < 25; i++) {
       const res = await chat(app, { messages: [] }, authorization);
 
       expect(res.status).toBe(200);

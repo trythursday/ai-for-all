@@ -59,7 +59,7 @@ budget and the hourly limit below are what protect the service, not the key.
 ### `POST /chat/completions`
 
 OpenAI-compatible chat completions. Send `messages`; tools, streaming and the
-rest of the OpenAI body pass straight through. 15 requests per hour per IP, and
+rest of the OpenAI body pass straight through. 25 requests per hour per IP, and
 per key. Limits: 16k input tokens, 16k output tokens, 32k context. `max_tokens`
 is clamped to whatever room is left.
 
