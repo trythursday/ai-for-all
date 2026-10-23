@@ -1,4 +1,4 @@
-import { afterEach, describe, expect, it } from "bun:test";
+import { afterEach, describe, expect, it, setSystemTime } from "bun:test";
 
 import { createApp } from "../app";
 import { keyId } from "../ids";
@@ -9,6 +9,7 @@ const realFetch = globalThis.fetch;
 
 afterEach(() => {
   globalThis.fetch = realFetch;
+  setSystemTime();
 });
 
 function chat(
@@ -50,6 +51,35 @@ describe("chat", () => {
     expect(res.status).toBe(401);
     expect(await res.json()).toMatchObject({
       ok: false,
+      error: { code: "invalid_api_key" },
+    });
+  });
+
+  it("tells a human when the key expired", async () => {
+    const app = createApp(CONFIG);
+    const { apiKey } = mintKey();
+
+    setSystemTime(new Date(Date.now() + 86_400_001));
+
+    const res = await chat(app, { messages: [] }, `Bearer ${apiKey}`);
+
+    expect(res.status).toBe(401);
+
+    const body = (await res.json()) as {
+      error: { code: string; message: string };
+    };
+
+    expect(body.error.code).toBe("key_expired");
+    expect(body.error.message).toContain("expired");
+    expect(body.error.message).toContain("http://x");
+  });
+
+  it("rejects an unknown key with a way to get one", async () => {
+    const app = createApp(CONFIG);
+    const res = await chat(app, { messages: [] }, "Bearer sk-th-nope");
+
+    expect(res.status).toBe(401);
+    expect(await res.json()).toMatchObject({
       error: { code: "invalid_api_key" },
     });
   });

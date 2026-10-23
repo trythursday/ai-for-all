@@ -49,16 +49,19 @@ Redeem a solved challenge for an API key.
 { "token": "...", "solutions": [1, 2, 3] }
 ```
 
-Returns `payload.apiKey` (starts with `sk-th-`, valid for 30 days) and the
-expiry in the `X-Key-Expires-At` and `X-Key-TTL` headers. One key per day per
-IP. A solved challenge can only be redeemed once.
+Returns `payload.apiKey` (starts with `sk-th-`, valid for 24 hours) and the
+expiry in the `X-Key-Expires-At` and `X-Key-TTL` headers. One key per 10 minutes
+per IP. A solved challenge can only be redeemed once.
+
+Keys are meant to be disposable. It is fine to lose one: get another. The
+budget and the hourly limit below are what protect the service, not the key.
 
 ### `POST /chat/completions`
 
 OpenAI-compatible chat completions. Send `messages`; tools, streaming and the
-rest of the OpenAI body pass straight through. 15 requests per hour per key.
-Limits: 16k input tokens, 16k output tokens, 32k context. `max_tokens` is
-clamped to whatever room is left.
+rest of the OpenAI body pass straight through. 15 requests per hour per IP, and
+per key. Limits: 16k input tokens, 16k output tokens, 32k context. `max_tokens`
+is clamped to whatever room is left.
 
 ```sh
 curl https://ai-for-all.trythursday.org/api/v1/chat/completions \

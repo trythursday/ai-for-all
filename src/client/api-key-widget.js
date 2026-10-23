@@ -206,8 +206,9 @@ class ApiKeyWidget extends HTMLElement {
 
     if (state.phase === "done") {
       const expires = state.expires
-        ? new Date(state.expires).toLocaleDateString(undefined, {
-            dateStyle: "long",
+        ? new Date(state.expires).toLocaleString(undefined, {
+            dateStyle: "medium",
+            timeStyle: "short",
           })
         : null;
 
@@ -243,7 +244,7 @@ class ApiKeyWidget extends HTMLElement {
       "Get an API key",
       html`
         <p>
-          One click to get a key valid for 30 days. 15 requests/hr/key. 16k
+          One click to get a key valid for 24 hours. 15 requests/hr per IP. 16k
           in/out, 32k total context.
         </p>
         <p class="row"><button data-start>Solve the challenge</button></p>
@@ -273,7 +274,7 @@ class ApiKeyWidget extends HTMLElement {
       const { response, reply } = await post(
         "/api/v1/issue",
         { token, solutions },
-        "This IP already received a key today. Try again tomorrow.",
+        "A key was issued from this IP in the past 10 minutes. Try again shortly.",
       );
 
       this.#state = {

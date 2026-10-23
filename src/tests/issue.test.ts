@@ -1,4 +1,4 @@
-import { describe, expect, it } from "bun:test";
+import { describe, expect, it, setSystemTime } from "bun:test";
 
 import { createApp } from "../app";
 import { mintId } from "../ids";
@@ -8,7 +8,6 @@ import {
   SECRET,
   challengeFor,
   issue,
-  post,
   solve,
   solveWrong,
 } from "./utils";
@@ -121,23 +120,36 @@ describe("issue", () => {
     expect(retry.status).toBe(201);
   });
 
-  it("limits issuance to one per day per ip", async () => {
+  it("limits issuance to one per 10 minutes per ip", async () => {
     const app = createApp(CONFIG);
-    const { challenge, token } = await challengeFor(app, "5.5.5.5");
+    const ip = "5.5.5.5";
+    const now = Date.now();
 
-    await issue(
-      app,
-      { token, solutions: solve(token, challenge.c, challenge.s, challenge.d) },
-      "5.5.5.5",
-    );
+    async function mint() {
+      const { challenge, token } = await challengeFor(app, ip);
 
-    const second = await post(
-      app,
-      "/api/v1/issue/challenge",
-      undefined,
-      "5.5.5.5",
-    );
+      return issue(
+        app,
+        {
+          token,
+          solutions: solve(token, challenge.c, challenge.s, challenge.d),
+        },
+        ip,
+      );
+    }
 
-    expect(second.status).toBe(429);
+    try {
+      expect((await mint()).status).toBe(201);
+
+      // Past the one-a-minute challenge limiter, inside the issue window.
+      setSystemTime(new Date(now + 61_000));
+      expect((await mint()).status).toBe(429);
+
+      // Past the issue window.
+      setSystemTime(new Date(now + 661_000));
+      expect((await mint()).status).toBe(201);
+    } finally {
+      setSystemTime();
+    }
   });
 });

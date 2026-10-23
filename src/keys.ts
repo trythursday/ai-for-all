@@ -1,6 +1,6 @@
 import { randomBytes } from "node:crypto";
 
-export const KEY_TTL_MS = 30 * 86_400_000;
+export const KEY_TTL_MS = 86_400_000;
 
 const keys = new Map<string, number>();
 
@@ -13,14 +13,17 @@ export function mintKey() {
   return { apiKey, expires };
 }
 
-export function isValidKey(apiKey: string) {
+export type KeyStatus = "valid" | "expired" | "unknown";
+
+export function keyStatus(apiKey: string): KeyStatus {
   const expires = keys.get(apiKey);
 
-  if (expires === undefined) return false;
+  if (expires === undefined) return "unknown";
+
   if (expires <= Date.now()) {
     keys.delete(apiKey);
-    return false;
+    return "expired";
   }
 
-  return true;
+  return "valid";
 }

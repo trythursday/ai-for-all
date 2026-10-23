@@ -3,13 +3,14 @@ import { proxy } from "hono/proxy";
 
 import { OPENROUTER_URL, type Config } from "../config";
 import { keyId } from "../ids";
-import { isValidKey } from "../keys";
+import { KEY_TTL_MS, keyStatus } from "../keys";
 import { RateLimiterFactory } from "../rate-limiter";
 import { MODELS, apiError, type ModelName } from "../utils/mod";
 import { estimateTokens, pickOpenAiFields } from "../utils/normalize";
 
-// The daily budget is shared by everyone, so one key must not be able to spend
-// it alone. At 15 an hour a key stays a fair share of a 0.25 day.
+// The daily budget is shared by everyone, so one ip must not be able to spend
+// it alone. At 15 an hour an ip stays a fair share of a 0.25 day. Keys are
+// disposable, so the ip is what gets counted; the key limiter is a backstop.
 const REQUESTS_PER_HOUR = 15;
 
 // Reasoning models spend their output budget thinking before they emit any
@@ -27,10 +28,21 @@ function bearer(c: Context) {
 
 async function chatHandler(c: Context, config: Config) {
   const apiKey = bearer(c);
+  const status = keyStatus(apiKey);
 
-  if (!isValidKey(apiKey)) {
+  if (status !== "valid") {
+    const home = new URL(c.req.url).origin;
+    const expired = status === "expired";
+    const hours = KEY_TTL_MS / 3_600_000;
+
     return c.json(
-      apiError("Invalid API key.", "invalid_request_error", "invalid_api_key"),
+      apiError(
+        expired
+          ? `Your API key expired. Keys last ${hours} hours; get a new one at ${home} and try again.`
+          : `That API key is not valid. Get a free one at ${home}.`,
+        "invalid_request_error",
+        expired ? "key_expired" : "invalid_api_key",
+      ),
       401,
     );
   }
@@ -121,6 +133,7 @@ async function chatHandler(c: Context, config: Config) {
 export const ChatRoute = (config: Config) =>
   [
     "/api/v1/chat/completions",
+    RateLimiterFactory("ip", 3_600_000, REQUESTS_PER_HOUR),
     RateLimiterFactory("authz", 3_600_000, REQUESTS_PER_HOUR),
     (c: Context) => chatHandler(c, config),
   ] as const;

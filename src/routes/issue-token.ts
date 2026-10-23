@@ -62,6 +62,6 @@ async function issueTokenHandler(
 export const IssueTokenRoute = (secret: string, consumeNonce: ConsumeNonce) =>
   [
     "/api/v1/issue",
-    RateLimiterFactory("ip", 86_400_000, 1, { skipFailedRequests: true }),
+    RateLimiterFactory("ip", 600_000, 1, { skipFailedRequests: true }),
     (c: Context) => issueTokenHandler(c, secret, consumeNonce),
   ] as const;
