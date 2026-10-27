@@ -10,6 +10,11 @@ const page = template<{ content: string }>(`<!doctype html>
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Thursday | AI For All</title>
     <link rel="stylesheet" href="${STYLESHEET}" />
+    <script
+      defer
+      src="https://analytics.shantaram.xyz/script.js"
+      data-website-id="bb5e9a75-a021-4f3b-a41f-9826db60979c"
+    ></script>
   </head>
   <body>
     {{{content}}}

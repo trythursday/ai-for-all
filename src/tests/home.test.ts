@@ -17,6 +17,12 @@ describe("home", () => {
     expect(home).toContain('<balance-widget id="balance">');
     expect(home).toContain("https://ai-for-all.trythursday.org/#balance");
     expect(home).toContain("<title>Thursday | AI For All</title>");
+    expect(home).toContain(
+      'src="https://analytics.shantaram.xyz/script.js"',
+    );
+    expect(home).toContain(
+      'data-website-id="bb5e9a75-a021-4f3b-a41f-9826db60979c"',
+    );
 
     for (const name of Object.keys(WIDGETS)) {
       expect(home).toContain(`src="/${name}"`);
