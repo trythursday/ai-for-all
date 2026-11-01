@@ -11,7 +11,7 @@ A free, captcha-gated proxy for AI inference. No account, no API key to buy.
 
 ## Why?
 
-When [I](https://shantaram.xyz) was a youngin coming up in the brand new world
+When [I](https://shantaram.xyz) was a youngun coming up in the brand new world
 of AI, I was incredibly interested. But I had no money to buy inference tokens.
 Inference is now cheap enough, and I am now fortunate enough, that I can give
 away a small amount of AI tokens for others like me who are looking to learn
